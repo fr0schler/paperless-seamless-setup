@@ -39,7 +39,7 @@ cloud-init apply /pfad/zu/cloud-init.yaml
 2.1 **Setup-Skript herunterladen und ausführen:**
 
 ```bash
-curl -L https://raw.githubusercontent.com/fr0schler/paperless-seamless-setup/main/setup.sh -o setup.sh
+curl -L https://raw.githubusercontent.com/fr0schler/paperless-seamless-setup/main/setup-paperless.sh -o setup.sh
 chmod +x setup.sh
 ./setup.sh
 ```
