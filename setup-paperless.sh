@@ -1,10 +1,29 @@
 #!/bin/bash
 
-set -e  # Stoppt das Skript bei Fehlern
+set -e
 
-# === Konfigurierbare Variable ===
-DOMAIN="paperless.your-domain.com"
-EMAIL="user@example.de"
+# === Parameter parsen ===
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --domain) DOMAIN="$2"; shift ;;
+        --email) EMAIL="$2"; shift ;;
+        *) echo "Unbekannter Parameter: $1" >&2; exit 1 ;;
+    esac
+    shift
+done
+
+# === Falls Parameter fehlen: abfragen ===
+if [ -z "$DOMAIN" ]; then
+    read -p "Bitte die Domain angeben (z.B. paperless.example.com): " DOMAIN
+fi
+
+if [ -z "$EMAIL" ]; then
+    read -p "Bitte die E-Mail für Let's Encrypt angeben: " EMAIL
+fi
+
+echo "==> Domain: $DOMAIN"
+echo "==> E-Mail: $EMAIL"
+
 REPO_URL="https://raw.githubusercontent.com/fr0schler/paperless-seamless-setup/main"
 
 sed -i 's|https://download.docker.com/linux/ubuntu|https://download.docker.com/linux/debian|' /etc/apt/sources.list.d/docker.list
@@ -53,9 +72,14 @@ cd /opt/paperless-ngx
 curl -L "$REPO_URL/docker-compose.yml" -o docker-compose.yml
 curl -L "$REPO_URL/.env.sample" -o .env
 
+
 # Admin-Zugang sicherstellen
 sed -i 's/PAPERLESS_ADMIN_USER=.*/PAPERLESS_ADMIN_USER=admin/' .env
 sed -i 's/PAPERLESS_ADMIN_PASSWORD=.*/PAPERLESS_ADMIN_PASSWORD=paperless123/' .env
+
+# Domain für CSRF und Allowed Hosts setzen
+sed -i "s|^PAPERLESS_ALLOWED_HOSTS=.*|PAPERLESS_ALLOWED_HOSTS=$DOMAIN|" .env
+sed -i "s|^PAPERLESS_CSRF_TRUSTED_ORIGINS=.*|PAPERLESS_CSRF_TRUSTED_ORIGINS=https://$DOMAIN|" .env
 
 echo "==> Docker Compose starten..."
 docker compose -f docker-compose.yml up -d
