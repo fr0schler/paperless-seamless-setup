@@ -2,7 +2,11 @@
 
 set -e  # Stoppt das Skript bei Fehlern
 
-# --- Paketquellen und Docker installieren ---
+# === Konfigurierbare Variable ===
+DOMAIN="paperless.your-domain.com"
+EMAIL="user@example.de"
+REPO_URL="https://raw.githubusercontent.com/fr0schler/paperless-seamless-setup/main"
+
 echo "==> Docker installieren..."
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common
@@ -13,35 +17,36 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docke
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# iptables Legacy Workaround
 echo "==> iptables auf Legacy umstellen..."
 update-alternatives --set iptables /usr/sbin/iptables-legacy
+update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 
 systemctl enable docker
 systemctl start docker
 
-# --- NGINX und Certbot installieren ---
 echo "==> NGINX und Certbot installieren..."
 apt-get install -y nginx python3-certbot-nginx
 
-# --- Paperless-ngx Setup ---
-echo "==> Paperless-ngx einrichten..."
+echo "==> Paperless-ngx Setup vorbereiten..."
 mkdir -p /opt/paperless-ngx
-curl -L https://raw.githubusercontent.com/paperless-ngx/paperless-ngx/main/docker/compose/docker-compose.yml -o /opt/paperless-ngx/docker-compose.yml
-curl -L https://raw.githubusercontent.com/paperless-ngx/paperless-ngx/main/docker/compose/.env.sample -o /opt/paperless-ngx/.env
+cd /opt/paperless-ngx
 
-# Admin Login setzen
-sed -i 's/PAPERLESS_ADMIN_USER=admin/PAPERLESS_ADMIN_USER=admin/' /opt/paperless-ngx/.env
-sed -i 's/PAPERLESS_ADMIN_PASSWORD=admin/PAPERLESS_ADMIN_PASSWORD=paperless123/' /opt/paperless-ngx/.env
+# Konfigurationsdateien aus eigenem GitHub-Repo laden
+curl -L "$REPO_URL/docker-compose.yml" -o docker-compose.yml
+curl -L "$REPO_URL/.env.sample" -o .env
 
-docker compose -f /opt/paperless-ngx/docker-compose.yml up -d
+# Admin-Zugang sicherstellen
+sed -i 's/PAPERLESS_ADMIN_USER=.*/PAPERLESS_ADMIN_USER=admin/' .env
+sed -i 's/PAPERLESS_ADMIN_PASSWORD=.*/PAPERLESS_ADMIN_PASSWORD=paperless123/' .env
 
-# --- NGINX Reverse Proxy konfigurieren ---
+echo "==> Docker Compose starten..."
+docker compose -f docker-compose.yml up -d
+
 echo "==> NGINX konfigurieren..."
 cat <<EOF > /etc/nginx/sites-available/paperless
 server {
     listen 80;
-    server_name paperless.hkp-solutions.de;  # <--- ERSETZEN MIT DEINER DOMAIN!
+    server_name $DOMAIN;
 
     location / {
         proxy_pass http://localhost:8000;
@@ -53,13 +58,11 @@ server {
 }
 EOF
 
-ln -s /etc/nginx/sites-available/paperless /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/paperless /etc/nginx/sites-enabled/paperless
 nginx -t && systemctl restart nginx
 
-# --- Let's Encrypt Zertifikat einrichten ---
-echo "==> Let's Encrypt Zertifikat beantragen..."
-sleep 30  # Warten, bis Paperless-ngx bereit ist
+echo "==> Zertifikat von Let's Encrypt anfordern..."
+sleep 30
+certbot --nginx --non-interactive --agree-tos --redirect --email "$EMAIL" -d "$DOMAIN"
 
-certbot --nginx --non-interactive --agree-tos --redirect --email tim@hkp-solutions.de -d paperless.hkp-solutions.de
-
-echo "==> Fertig! Paperless-ngx läuft unter https://yourdomain.com"
+echo "==> Fertig! Paperless-ngx ist erreichbar unter: https://$DOMAIN"
