@@ -7,6 +7,8 @@ DOMAIN="paperless.your-domain.com"
 EMAIL="user@example.de"
 REPO_URL="https://raw.githubusercontent.com/fr0schler/paperless-seamless-setup/main"
 
+sed -i 's|https://download.docker.com/linux/ubuntu|https://download.docker.com/linux/debian|' /etc/apt/sources.list.d/docker.list
+
 echo "==> Docker installieren..."
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common
@@ -23,6 +25,22 @@ update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 
 systemctl enable docker
 systemctl start docker
+
+echo "==> iptables auf Legacy umstellen (IPv4 & IPv6)..."
+if update-alternatives --list iptables | grep -q "iptables-legacy"; then
+    update-alternatives --set iptables /usr/sbin/iptables-legacy
+else
+    echo "WARNUNG: iptables-legacy nicht verfügbar für IPv4!"
+fi
+
+if update-alternatives --list ip6tables | grep -q "ip6tables-legacy"; then
+    update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+else
+    echo "WARNUNG: ip6tables-legacy nicht verfügbar für IPv6!"
+fi
+
+echo "==> Docker neu starten..."
+systemctl restart docker
 
 echo "==> NGINX und Certbot installieren..."
 apt-get install -y nginx python3-certbot-nginx
