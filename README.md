@@ -1,0 +1,1 @@
+# paperless-seamless-setup
