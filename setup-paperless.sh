@@ -7,6 +7,7 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         --domain) DOMAIN="$2"; shift ;;
         --email) EMAIL="$2"; shift ;;
+        --netbird-key) NETBIRD="$2"; shift ;;
         *) echo "Unbekannter Parameter: $1" >&2; exit 1 ;;
     esac
     shift
@@ -21,8 +22,13 @@ if [ -z "$EMAIL" ]; then
     read -p "Bitte die E-Mail für Let's Encrypt angeben: " EMAIL
 fi
 
+if [ -z "$NETBIRD" ]; then
+    read -p "Bitte den Setup-Key für Netbird eingeben: " NETBIRD
+fi
+
 echo "==> Domain: $DOMAIN"
 echo "==> E-Mail: $EMAIL"
+echo "==> Netbird Setup-Key: $NETBIRD"
 
 REPO_URL="https://raw.githubusercontent.com/fr0schler/paperless-seamless-setup/main"
 
