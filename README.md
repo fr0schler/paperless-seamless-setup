@@ -1,5 +1,24 @@
 # Paperless-ngx Setup (Docker + NGINX + Let's Encrypt)
 
+## Netbird Cloud-init
+
+1. Unter Debian
+
+```yaml
+runcmd:
+  - curl -fsSL https://pkgs.netbird.io/install.sh | sh
+  - netbird up --setup-key <DEIN_SETUP_KEY>
+```
+
+2. Version von Debian (Hetzner)
+
+```yaml
+runcmd:
+  - sed -i 's|https://download.docker.com/linux/ubuntu|https://download.docker.com/linux/debian|' /etc/apt/sources.list.d/docker.list
+  - curl -fsSL https://pkgs.netbird.io/install.sh | sh
+  - netbird up --setup-key <DEIN_SETUP_KEY>
+```
+
 ## 📊 Projektüberblick
 
 Dieses Repository stellt ein automatisiertes Setup für **Paperless-ngx** bereit, inklusive:

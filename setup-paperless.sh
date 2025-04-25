@@ -70,7 +70,7 @@ cd /opt/paperless-ngx
 
 # Konfigurationsdateien aus eigenem GitHub-Repo laden
 curl -L "$REPO_URL/docker-compose.yml" -o docker-compose.yml
-curl -L "$REPO_URL/.env.sample" -o .env
+curl -L "$REPO_URL/.env.sample" -o docker-compose.env
 
 
 # Admin-Zugang sicherstellen
