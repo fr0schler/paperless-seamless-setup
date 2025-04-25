@@ -107,4 +107,8 @@ echo "==> Zertifikat von Let's Encrypt anfordern..."
 sleep 30
 certbot --nginx --non-interactive --agree-tos --redirect --email "$EMAIL" -d "$DOMAIN"
 
+sleep 10
+curl -fsSL https://pkgs.netbird.io/install.sh | sh
+
+echo "==> Netbird ist installiert: mit Netbird up --setup-key <DEIN_SETUP_KEY>"
 echo "==> Fertig! Paperless-ngx ist erreichbar unter: https://$DOMAIN"
