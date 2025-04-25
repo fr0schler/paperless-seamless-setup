@@ -64,7 +64,7 @@ chmod +x setup.sh
 
 ```bash
 
-./setup.sh --domain yoursubdomain.domain.tld --email mailbox@yourdomain.de
+./setup.sh --domain yoursubdomain.domain.tld --email mailbox@yourdomain.de --netbird-key <SETUP-KEY>
 ```
 
 ---
