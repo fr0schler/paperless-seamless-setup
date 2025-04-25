@@ -106,7 +106,7 @@ server {
 }
 EOF
 
-ln -sf /etc/nginx/sites-available/paperless /etc/nginx/sites-enabled/paperless
+ln -sf /etc/nginx/sites-available/$DOMAIN.conf /etc/nginx/sites-enabled/$DOMAIN.conf
 nginx -t && systemctl restart nginx
 
 echo "==> Zertifikat von Let's Encrypt anfordern..."
