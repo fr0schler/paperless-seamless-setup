@@ -8,6 +8,8 @@ while [[ "$#" -gt 0 ]]; do
         --domain) DOMAIN="$2"; shift ;;
         --email) EMAIL="$2"; shift ;;
         --netbird-key) NETBIRD="$2"; shift ;;
+        --webdav-user) WEBDAV_USER="$2"; shift ;;
+        --webdav-password) WEBDAV_PASSWORD="$2"; shift ;;
         *) echo "Unbekannter Parameter: $1" >&2; exit 1 ;;
     esac
     shift
@@ -26,6 +28,14 @@ if [ -z "$NETBIRD" ]; then
     read -p "Bitte den Setup-Key für Netbird eingeben: " NETBIRD
 fi
 
+if [ -z "$WEBDAV_USER" ]; then
+    read -p "Bitte den WebDAV-Benutzernamen angeben: " WEBDAV_USER
+fi
+
+if [ -z "$WEBDAV_PASSWORD" ]; then
+    read -p "Bitte das WebDAV-Passwort angeben: " WEBDAV_PASSWORD
+fi
+
 echo "==> Domain: $DOMAIN"
 echo "==> E-Mail: $EMAIL"
 echo "==> Netbird Setup-Key: $NETBIRD"
@@ -36,7 +46,8 @@ sed -i 's|https://download.docker.com/linux/ubuntu|https://download.docker.com/l
 
 echo "==> Docker installieren..."
 apt-get update
-apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common
+apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common fail2ban nginx-extras apache2-utils
+
 
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
@@ -66,6 +77,31 @@ fi
 
 echo "==> Docker neu starten..."
 systemctl restart docker
+
+# Fail2ban Konfiguration
+echo "==> Fail2Ban für WebDAV einrichten..."
+
+cat <<EOF > /etc/fail2ban/filter.d/nginx-webdav.conf
+[Definition]
+failregex = ^<HOST> -.*"(GET|PROPFIND|OPTIONS|PUT|DELETE|MOVE|COPY|MKCOL) .* HTTP.*" 401
+EOF
+
+cat <<EOF >> /etc/fail2ban/jail.local
+
+[nginx-webdav]
+enabled  = true
+port     = 443
+filter   = nginx-webdav
+logpath  = /var/log/nginx/error.log
+maxretry = 5
+bantime  = 3600
+findtime = 600
+EOF
+
+sed -i 's/enabled = true/enabled = false/' /etc/fail2ban/jail.d/defaults-debian.conf
+
+# Fail2ban neu starten
+systemctl restart fail2ban
 
 echo "==> NGINX und Certbot installieren..."
 apt-get install -y nginx python3-certbot-nginx
@@ -103,6 +139,19 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
+
+    # WebDAV für Consume-Ordner
+    location /consume/ {
+        root /opt/paperless-ngx/;
+        dav_methods PUT DELETE MKCOL COPY MOVE;
+        dav_ext_methods PROPFIND OPTIONS;
+        create_full_put_path on;
+        client_max_body_size 5G;
+
+        # Authentifizierung
+        auth_basic "Paperless WebDAV";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+    }
 }
 EOF
 
@@ -114,6 +163,12 @@ sleep 30
 certbot --nginx --non-interactive --agree-tos --redirect --email "$EMAIL" -d "$DOMAIN"
 
 sleep 10
+echo "==> WebDAV-user und Passwort setzen..."
+htpasswd -b /etc/nginx/.htpasswd $WEBDAV_USER $WEBDAV_PASSWORD
+
+echo "==> NGINX neu starten..."
+nginx -t && systemctl reload nginx
+
 echo "==> Netbird: Wird heruntergeladen und installiert."
 curl -fsSL https://pkgs.netbird.io/install.sh | sh
 echo "==> Netbird: Installation beendet, versuche mit Setup-Key zu Connecten."
