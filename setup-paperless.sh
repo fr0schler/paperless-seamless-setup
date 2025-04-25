@@ -91,7 +91,7 @@ echo "==> Docker Compose starten..."
 docker compose -f docker-compose.yml up -d
 
 echo "==> NGINX konfigurieren..."
-cat <<EOF > /etc/nginx/sites-available/paperless.$DOMAIN.conf
+cat <<EOF > /etc/nginx/sites-available/$DOMAIN.conf
 server {
     listen 80;
     server_name $DOMAIN;
