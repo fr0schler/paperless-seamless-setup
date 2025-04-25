@@ -116,5 +116,7 @@ certbot --nginx --non-interactive --agree-tos --redirect --email "$EMAIL" -d "$D
 sleep 10
 curl -fsSL https://pkgs.netbird.io/install.sh | sh
 
+netbird up --setup-key "$NETBIRD"
+
 echo "==> Netbird ist installiert: mit Netbird up --setup-key <DEIN_SETUP_KEY>"
 echo "==> Fertig! Paperless-ngx ist erreichbar unter: https://$DOMAIN"
