@@ -60,6 +60,7 @@ cloud-init apply /pfad/zu/cloud-init.yaml
 ```bash
 curl -L https://raw.githubusercontent.com/fr0schler/paperless-seamless-setup/main/setup-paperless.sh -o setup.sh
 chmod +x setup.sh
+./setup.sh
 ```
 
 ```bash
