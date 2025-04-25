@@ -80,18 +80,18 @@ curl -L "$REPO_URL/.env.sample" -o docker-compose.env
 
 
 # Admin-Zugang sicherstellen
-sed -i 's/PAPERLESS_ADMIN_USER=.*/PAPERLESS_ADMIN_USER=admin/' .env
-sed -i 's/PAPERLESS_ADMIN_PASSWORD=.*/PAPERLESS_ADMIN_PASSWORD=paperless123/' .env
+sed -i 's/PAPERLESS_ADMIN_USER=.*/PAPERLESS_ADMIN_USER=admin/' docker-compose.env
+sed -i 's/PAPERLESS_ADMIN_PASSWORD=.*/PAPERLESS_ADMIN_PASSWORD=paperless123/' docker-compose.env
 
 # Domain für CSRF und Allowed Hosts setzen
-sed -i "s|^PAPERLESS_ALLOWED_HOSTS=.*|PAPERLESS_ALLOWED_HOSTS=$DOMAIN|" .env
-sed -i "s|^PAPERLESS_CSRF_TRUSTED_ORIGINS=.*|PAPERLESS_CSRF_TRUSTED_ORIGINS=https://$DOMAIN|" .env
+sed -i "s|^PAPERLESS_ALLOWED_HOSTS=.*|PAPERLESS_ALLOWED_HOSTS=$DOMAIN|" docker-compose.env
+sed -i "s|^PAPERLESS_CSRF_TRUSTED_ORIGINS=.*|PAPERLESS_CSRF_TRUSTED_ORIGINS=https://$DOMAIN|" docker-compose.env
 
 echo "==> Docker Compose starten..."
 docker compose -f docker-compose.yml up -d
 
 echo "==> NGINX konfigurieren..."
-cat <<EOF > /etc/nginx/sites-available/paperless
+cat <<EOF > /etc/nginx/sites-available/paperless.$DOMAIN.conf
 server {
     listen 80;
     server_name $DOMAIN;
